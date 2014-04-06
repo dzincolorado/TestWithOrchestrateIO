@@ -4,7 +4,7 @@
   , "private": true
   , "dependencies": {
       "express": "2.5.8"
-    , "jade": ">= 0.0.1"
+    , "jade": ">= 1.3.1"
     , "socket.io": ">= 0.9.16"
     , "orchestrate": ">= 0.0.9"
     , "async": ">= 0.6.2"
