@@ -5,6 +5,7 @@
 
 var express = require('express')
   , routes = require('./routes')
+  , movieDb = require("./routes/moviedb")
   , http = require("http");
 
 var router = express();
@@ -31,14 +32,15 @@ router.configure('production', function(){
   router.use(express.errorHandler());
 });
 
+console.log("Chat server listening at", process.env.IP + ":" + process.env.PORT);
+
 // Routes
 
-router.get('/', routes.index);
-router.get('/ncdc', function(req, res){
-    routes.getData(req, res, http);
+router.get('/genre', function(req, res){
+    movieDb.getGenres(req, res);
     });
+router.get('/', routes.index);
+
 
 server.listen(process.env.PORT || 8080, process.env.IP || "0.0.0.0", function(){
-  var addr = server.address();
-  console.log("Chat server listening at", addr.address + ":" + addr.port);
 });

@@ -8,5 +8,6 @@
     , "socket.io": ">= 0.9.16"
     , "orchestrate": ">= 0.0.9"
     , "async": ">= 0.6.2"
+    , "moviedb": ">= 0.1.2"
   }
 }
