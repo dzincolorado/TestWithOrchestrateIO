@@ -5,7 +5,7 @@
 
 var express = require('express')
   , routes = require('./routes')
-  , movieDb = require("./routes/moviedb")
+  , movie = require("./routes/movie")
   , http = require("http");
 
 var router = express();
@@ -37,7 +37,7 @@ console.log("Chat server listening at", process.env.IP + ":" + process.env.PORT)
 // Routes
 
 router.get('/genre', function(req, res){
-    movieDb.getGenres(req, res);
+    movie.getGenres(req, res);
     });
 router.get('/', routes.index);
 
