@@ -9,5 +9,7 @@
     , "orchestrate": ">= 0.0.9"
     , "async": ">= 0.6.2"
     , "moviedb": ">= 0.1.2"
+    , "promise": ">= 1.3.8"
+    , "promisejs": "0.1.3"
   }
 }

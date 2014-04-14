@@ -27,7 +27,21 @@ exports.pushGenresToOrchestrate = function(){
 exports.pushMoviesByGenreToOrchestrate = function(){
     
     //TODO: I have duplicate code in routes/movie.js to get the list of genres.  Need to refactor use Promises!
-    orchestrate.list("genres").then(function(result){
-       console.log(result.body.results[0]); 
+    //Limit to 100 genres for now
+    orchestrate.list("genres", {limit: 100}).then(function(result){
+       var pageCounter = 1;
+       result.body.results.forEach(function(result){
+              externalMovieDb.genreMovies(
+                  {id: result.path.key
+                  , page: pageCounter
+                  , include_all_movies: true
+                  }
+                  , function(err, results){
+                      if(err) console.log(err);
+                      else{
+                        console.log(results.total_results);   
+                      }
+           }); 
+       });
     });
 }
