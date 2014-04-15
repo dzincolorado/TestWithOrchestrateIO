@@ -1,8 +1,10 @@
 var settings = require("../../utility/settings");
 var externalMovieDb = require("moviedb")(settings.getSettings.movieDbApiKey());//Would usually pull value from either config or Db.
 var promise = require("promise");//promises from A+
+var Q = require("kew");
 //var promise = require("promisejs");
 
+//regular callback style
 function getMovieList(currentPage, genreId){
     externalMovieDb.genreMovies(
           {
@@ -23,27 +25,63 @@ function getMovieList(currentPage, genreId){
    });
 }
 
-//returns a promise
+//uses promises/A+
 function getMovieListPromise(currentPage, genreId){
     
-    var genreMovies = promise.denodeify(externalMovieDb.genreMovies);
-    
-    var p = genreMovies(
+    var p = new promise(function(reject, resolve){
+        externalMovieDb.genreMovies(
+          {
+            id: genreId
+          , page: currentPage
+          , include_all_movies: true
+          })
+          , function(err, results){
+                if(err) reject(err);
+                else
+                {
+                    resolve(results).then(function(str){
+                        console.log("Total Results: " + results[0].original_title);
+                        console.log("Current Page: " + results.page);
+                        console.log("Total Pages: " + results.total_pages); 
+                        
+                            if(parseInt(results.total_pages, 10) > 0 && parseInt(results.total_results, 10) > 0 ){
+                                currentPage++;
+                                getMovieListPromise(currentPage, genreId);
+                            }
+                    });
+                }
+          }
+        });
+}
+
+//uses kew
+function getMovieListKewPromise(currentPage, genreId){
+    externalMovieDb.genreMovies(
       {
         id: genreId
       , page: currentPage
       , include_all_movies: true
-      })
-      .then(function(results){
-            console.log("Total Results: " + results[0].original_title);
-            console.log("Current Page: " + results.page);
-            console.log("Total Pages: " + results.total_pages); 
-            return parseInt(results.total_pages, 10) === 0 ? true: false;
+      }, function(err, results){
+          if(err) 
+          {
+              console.log("failing promise: " + err);
+              Q.reject(err);
           }
-          , function(err){
-            console.log(err);
-            return err;
-        });
+          else
+          {
+              console.log("success promise: " + results.page);
+              console.log("currentPage: " + currentPage);
+              if(parseInt(results.total_pages, 10) > 0 && parseInt(results.total_results, 10) > 0)
+              {
+                  //once promise is resovled, then recursively call self
+                  Q.resolve(results)
+                  .then(function(result){
+                      currentPage++;
+                      getMovieListKewPromise(currentPage, genreId);
+                  });
+              }
+          }
+      });
 }
 
 //genre id 16
@@ -64,19 +102,13 @@ function TestMoviesByGenreWithCallbacks(genreId){
 function TestMoviesByGenreWithPromises(genreId){
     var currentPage = 1;
     var isDone = false;
-    while(!isDone)
-    {
-        console.log("Current Page: " + currentPage);
-        isDone = getMovieListPromise(currentPage, genreId);
-        currentPage++;
-        /*var p = getMovieListPromise(currentPage, genreId);
-        p.then(function(error, result){
-            isDone = p;
-            if(!isDone){
-                currentPage ++;
-            }
-        })*/
-    }
+    
+    //use kew promises
+    getMovieListKewPromise(currentPage, genreId);
+    
+    //uses promises/A+
+    //TODO: need to fix issues that appear with this promise module
+    //getMovieListPromise(currentPage, genreId);
 }
 
 function TestMoviesByGenreWithAsync(genreId){
@@ -88,5 +120,4 @@ function TestMoviesByGenreWithAsync(genreId){
 //TestMoviesByGenreWithCallbacks(16);
 
 //Run test w/ promise
-//TODO: Not working, need to fix
-//TestMoviesByGenreWithPromises(16);
+TestMoviesByGenreWithPromises(16);
