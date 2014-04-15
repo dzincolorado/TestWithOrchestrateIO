@@ -26,26 +26,24 @@ function getMovieList(currentPage, genreId){
 //returns a promise
 function getMovieListPromise(currentPage, genreId){
     
-    var p = new promise(function(resolve, reject){
-        externalMovieDb.genreMovies(
-          {
-            id: genreId
-          , page: currentPage
-          , include_all_movies: true
+    var genreMovies = promise.denodeify(externalMovieDb.genreMovies);
+    
+    var p = genreMovies(
+      {
+        id: genreId
+      , page: currentPage
+      , include_all_movies: true
+      })
+      .then(function(results){
+            console.log("Total Results: " + results[0].original_title);
+            console.log("Current Page: " + results.page);
+            console.log("Total Pages: " + results.total_pages); 
+            return parseInt(results.total_pages, 10) === 0 ? true: false;
           }
-          , function(err, results){
-              if(err) {
-                  console.log(err);
-                  reject(err, 0);
-              }
-              else{
-                console.log("Total Results: " + results[0].original_title);
-                console.log("Current Page: " + results.page);
-                console.log("Total Pages: " + results.total_pages); 
-                resolve(null, parseInt(results.total_pages, 10) === 0 ? true: false);
-              }
-    });
-   });
+          , function(err){
+            console.log(err);
+            return err;
+        });
 }
 
 //genre id 16
@@ -69,13 +67,15 @@ function TestMoviesByGenreWithPromises(genreId){
     while(!isDone)
     {
         console.log("Current Page: " + currentPage);
-        var p = getMovieListPromise(currentPage, genreId);
+        isDone = getMovieListPromise(currentPage, genreId);
+        currentPage++;
+        /*var p = getMovieListPromise(currentPage, genreId);
         p.then(function(error, result){
             isDone = p;
             if(!isDone){
                 currentPage ++;
             }
-        })
+        })*/
     }
 }
 
