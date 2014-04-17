@@ -1,8 +1,8 @@
 var settings = require("../../utility/settings");
 var externalMovieDb = require("moviedb")(settings.getSettings.movieDbApiKey());//Would usually pull value from either config or Db.
-var promise = require("promise");//promises from A+
+var aPlusPromise = require("promise");//promises from A+
 var Q = require("kew");
-//var promise = require("promisejs");
+var promisejs = require("promisejs");
 
 //regular callback style
 function getMovieList(currentPage, genreId){
@@ -26,36 +26,57 @@ function getMovieList(currentPage, genreId){
 }
 
 //uses promises/A+
-function getMovieListPromise(currentPage, genreId){
+function getMovieListWithAPlusPromise(currentPage, genreId){
     
-    var p = new promise(function(reject, resolve){
-        externalMovieDb.genreMovies(
-          {
-            id: genreId
-          , page: currentPage
-          , include_all_movies: true
-          })
-          , function(err, results){
-                if(err) reject(err);
-                else
-                {
-                    resolve(results).then(function(str){
-                        console.log("Total Results: " + results[0].original_title);
-                        console.log("Current Page: " + results.page);
-                        console.log("Total Pages: " + results.total_pages); 
-                        
-                            if(parseInt(results.total_pages, 10) > 0 && parseInt(results.total_results, 10) > 0 ){
-                                currentPage++;
-                                getMovieListPromise(currentPage, genreId);
-                            }
-                    });
-                }
-          }
+    var genreMovies = aPlusPromise.denodeify(externalMovieDb.genreMovies);
+    
+    var p = genreMovies({
+        id: genreId
+      , page: currentPage
+      , include_all_movies: true
+      })
+      .then(function(err, results){
+            if(err) console.log(results);
+            else
+            {
+                console.log("Total Results: " + results[0].original_title);
+                console.log("Current Page: " + results.page);
+                console.log("Total Pages: " + results.total_pages); 
+                
+                    if(parseInt(results.total_pages, 10) > 0 && parseInt(results.total_results, 10) > 0 ){
+                        currentPage++;
+                        getMovieListWithAPlusPromise(currentPage, genreId);
+                    }
+            }
         });
 }
 
+//uses promisejs
+function getMovieListWithPromisejs(currentPage, genreId){
+
+    var p = new promisejs.Promise();
+    externalMovieDb.genreMovies({
+        id: genreId
+      , page: currentPage
+      , include_all_movies: true
+      }
+      , function(err, results){
+            if(err) p.done(err, null);
+            else
+            {
+                console.log("Total Results: " + results);
+                
+                    if(parseInt(results.total_pages, 10) > 0 && parseInt(results.total_results, 10) > 0 ){
+                        p.done(null, results);
+                    }
+            }
+        });
+    
+    return p;
+}
+
 //uses kew
-function getMovieListKewPromise(currentPage, genreId){
+function getMovieListWithKewPromise(currentPage, genreId){
     externalMovieDb.genreMovies(
       {
         id: genreId
@@ -77,7 +98,7 @@ function getMovieListKewPromise(currentPage, genreId){
                   Q.resolve(results)
                   .then(function(result){
                       currentPage++;
-                      getMovieListKewPromise(currentPage, genreId);
+                      getMovieListWithKewPromise(currentPage, genreId);
                   });
               }
           }
@@ -104,11 +125,22 @@ function TestMoviesByGenreWithPromises(genreId){
     var isDone = false;
     
     //use kew promises
-    getMovieListKewPromise(currentPage, genreId);
+    //getMovieListWithKewPromise(currentPage, genreId);
     
     //uses promises/A+
     //TODO: need to fix issues that appear with this promise module
-    //getMovieListPromise(currentPage, genreId);
+    //getMovieListWithAPlusPromise(currentPage, genreId);
+    
+    //uses promisejs
+    /*
+    var p = getMovieListWithPromisejs(currentPage, genreId);
+    p.then(function(error, results){
+       if(error) console.log(error);
+       else{
+           console.log("Promise is returned and resolved: Total Pages: " + results.total_pages);
+       }
+    });
+    */
 }
 
 function TestMoviesByGenreWithAsync(genreId){
