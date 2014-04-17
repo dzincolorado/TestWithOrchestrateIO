@@ -54,7 +54,7 @@ function getMovieListWithAPlusPromise(currentPage, genreId){
 //uses promisejs
 function getMovieListWithPromisejs(currentPage, genreId){
 
-    var p = new promisejs.Promise();
+    var p = new promisejs.Promise(); //This seems to fail on the 'new' keyword.  TODO: need to investigate
     externalMovieDb.genreMovies({
         id: genreId
       , page: currentPage
