@@ -24,37 +24,48 @@ exports.pushGenresToOrchestrate = function(){
     });
 }
 
+function pushResults(err, results){
+    
+    //TODO: use promises?
+    if(err) console.log(err);
+    else{
+        console.log(results.results[0].id);   
+        /*results.results.forEach(function(movie){
+            orchestrate.put(
+                "movies"
+                , movie.id
+                , {
+                    originalTitle: movie.original_title
+                    , title: movie.title
+                    , releaseDate: movie.release_date
+                    , posterPath: movie.poster_path
+            });
+        });*/
+    }
+}
+
+function processMoviesByGenre(result){
+    
+    var pageCounter = 1;
+    //TODO: use promises?
+    externalMovieDb.genreMovies(
+      {
+        id: result.path.key
+        , page: pageCounter
+        , include_all_movies: true
+      }
+      , pushResults
+    )
+}
+
+function processGenre(result){
+    
+    result.body.results.forEach(processMoviesByGenre);
+}
+
 exports.pushMoviesByGenreToOrchestrate = function(){
     
     //orchestrate.deleteCollection("movies);
     //Limit to 100 genres for now
-    //TODO: this is messy, we need to use promises to clean this up a bit.
-    orchestrate.list("genres", {limit: 100}).then(function(result){
-       var pageCounter = 1;
-       result.body.results.forEach(function(result){
-              externalMovieDb.genreMovies(
-                  {id: result.path.key
-                  , page: pageCounter
-                  , include_all_movies: true
-                  }
-                  , function(err, results){
-                      if(err) console.log(err);
-                      else{
-                        console.log(results.results[0].id);   
-                        results.results.forEach(function(movie){
-                            orchestrate.put(
-                                "movies"
-                                , movie.id
-                                , {
-                                    originalTitle: movie.original_title
-                                    , title: movie.title
-                                    , releaseDate: movie.release_date
-                                    , posterPath: movie.poster_path
-                            });
-                        });
-                      }
-                  }
-             )
-       });
-    });
+    orchestrate.list("genres", {limit: 100}).then(processGenre);
 }
