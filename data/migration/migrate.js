@@ -26,10 +26,10 @@ exports.pushGenresToOrchestrate = function(){
 
 function pushResults(err, results){
     
-    //TODO: use promises?
+   //not sure if I want to use promises for this
     if(err) console.log(err);
     else{
-        console.log(results.results[0].id);   
+        console.log("count per page: " + results.results.length);   
         /*results.results.forEach(function(movie){
             orchestrate.put(
                 "movies"
@@ -44,10 +44,11 @@ function pushResults(err, results){
     }
 }
 
-function processMoviesByGenre(result){
+function processMoviesByGenre(result, pageIndex){
     
-    var pageCounter = 1;
-    //TODO: use promises?
+    console.log("pageIndex: " + pageIndex);
+    var pageCounter = (typeof pageIndex === "undefined") ? 1 : pageIndex;
+    //not sure if I want to use promises for this
     externalMovieDb.genreMovies(
       {
         id: result.path.key
