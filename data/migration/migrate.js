@@ -3,14 +3,13 @@
 var settings = require("../../utility/settings");
 var orchestrate = require("orchestrate")(settings.getSettings.orchestrateKey());
 var externalMovieDb = require("moviedb")(settings.getSettings.movieDbApiKey());//Would usually pull value from either config or Db.
-
-//var localMovieDb = require("../routes/movie");
+var movieRepoConstants = require("../movieRepo").constants;
 
 exports.pushGenresToOrchestrate = function(){
     externalMovieDb.genreList(function(err, res){
         
         res["genres"].forEach(function(genre){
-            orchestrate.put("genres", genre.id, {
+            orchestrate.put(movieRepoConstants.GENRE_COLLECTION_NAME, genre.id, {
                 name: genre.name
             }).then(function(result){
                 
@@ -24,38 +23,51 @@ exports.pushGenresToOrchestrate = function(){
     });
 }
 
-function pushResults(err, results){
-    
-   //not sure if I want to use promises for this
-    if(err) console.log(err);
-    else{
-        console.log("count per page: " + results.results.length);   
-        /*results.results.forEach(function(movie){
-            orchestrate.put(
-                "movies"
-                , movie.id
-                , {
-                    originalTitle: movie.original_title
-                    , title: movie.title
-                    , releaseDate: movie.release_date
-                    , posterPath: movie.poster_path
-            });
-        });*/
-    }
-}
-
 function processMoviesByGenre(result, pageIndex){
     
-    console.log("pageIndex: " + pageIndex);
     var pageCounter = (typeof pageIndex === "undefined") ? 1 : pageIndex;
-    //not sure if I want to use promises for this
+    pageCounter = (pageCounter === 0) ? 1 : pageCounter;
+    console.log(result.path.key + ":" + pageCounter + ":");
+    
+    //opting to not use promises to push as much data as quickly as possible
     externalMovieDb.genreMovies(
       {
         id: result.path.key
         , page: pageCounter
         , include_all_movies: true
       }
-      , pushResults
+      , function(err, results){
+    
+            if(err) console.log(err);
+            else{
+                
+                console.log("page count: " + pageCounter + " for genre key: " + result.path.key + ":" + movieRepoConstants.MOVIE_COLLECTION_NAME + ":");   
+                results.results.forEach(function(movie){
+                    orchestrate.put(
+                        movieRepoConstants.MOVIE_COLLECTION_NAME
+                        , movie.id
+                        , {
+                            originalTitle: movie.original_title
+                            , title: movie.title
+                            , releaseDate: movie.release_date
+                            , posterPath: movie.poster_path
+                    }).then(function(result){ //use a promise here because movie must exist to build the graph
+                        console.log(JSON.stringify(result));
+                        orchestrate.newGraphBuilder()
+                        .create()
+                        .from(movieRepoConstants.MOVIE_COLLECTION_NAME, movie.id)
+                        .related("is")
+                        .to(movieRepoConstants.GENRE_COLLECTION_NAME, result.path.key);
+                    });
+                });
+                
+                if(results.results.length > 0){
+                    var i = pageCounter + 1;
+                    //recurse through all pages
+                    processMoviesByGenre(result, i);
+                }
+            }
+        }
     )
 }
 
@@ -66,7 +78,11 @@ function processGenre(result){
 
 exports.pushMoviesByGenreToOrchestrate = function(){
     
-    //orchestrate.deleteCollection("movies);
+    //orchestrate.deleteCollection(movieRepoConstants.MOVIE_COLLECTION_NAME);
     //Limit to 100 genres for now
-    orchestrate.list("genres", {limit: 100}).then(processGenre);
+    orchestrate.list(movieRepoConstants.GENRE_COLLECTION_NAME, {limit: 100}).then(processGenre);
+}
+
+exports.clearData = function(){
+    orchestrate.deleteCollection(movieRepoConstants.MOVIE_COLLECTION_NAME);
 }

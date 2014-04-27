@@ -5,7 +5,7 @@ var orchestrate = require("orchestrate")(settings.getSettings.orchestrateKey());
 
 //get list of genres
 exports.genres = function(response){
-    orchestrate.list("genres")
+    orchestrate.list(constants.GENRE_COLLECTION_NAME)
         .then(function(result){
             var genres = result.body.results;
             
@@ -17,3 +17,11 @@ exports.genres = function(response){
             
         });   
 }
+
+var constants = {
+    GENRE_COLLECTION_NAME: "genres",
+    MOVIE_COLLECTION_NAME: "movies"
+}
+
+//constants related to the movieDb
+exports.constants = constants
